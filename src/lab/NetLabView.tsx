@@ -6,8 +6,14 @@ import {
   Download,
   FilePlus2,
   Info,
+  Maximize2,
+  Minimize2,
   Monitor,
   Network,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Pencil,
   Redo2,
   Router,
@@ -17,6 +23,7 @@ import {
   TriangleAlert,
   Undo2,
   Upload,
+  X,
 } from 'lucide-react'
 import type { DeviceKind, FaultKind, Lab } from '../engine/types'
 import { summarizeValidation, validateLab } from '../engine/validate'
@@ -73,6 +80,11 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
   const [highlighted, setHighlighted] = useState<string[]>([])
   const [connectError, setConnectError] = useState<string | null>(null)
   const [importNotice, setImportNotice] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null)
+  // Workspace layout (UI only — lab data always lives in the store).
+  const [labSidebarOpen, setLabSidebarOpen] = useState(true)
+  const [inspectorOpen, setInspectorOpen] = useState(true)
+  const [focusMode, setFocusMode] = useState(false)
+  const [focusInspector, setFocusInspector] = useState(false)
   const historyRef = useRef(new LabHistory())
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [, forceRender] = useState(0)
@@ -107,6 +119,24 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
   }, [lab])
 
   const selectedDevice = lab?.devices.find((d) => d.id === selectedDeviceId) ?? null
+
+  // Focus mode hides both side panels; normal mode honors the two toggles.
+  // Panels stay MOUNTED (hidden with CSS) so tool state and selection survive.
+  const showLabSidebar = labSidebarOpen && !focusMode
+  const showInspector = inspectorOpen && !focusMode
+  const gridColsClass =
+    showLabSidebar && showInspector
+      ? 'xl:grid-cols-[240px_minmax(0,1fr)_340px]'
+      : showLabSidebar
+        ? 'xl:grid-cols-[240px_minmax(0,1fr)]'
+        : showInspector
+          ? 'xl:grid-cols-[minmax(0,1fr)_340px]'
+          : 'xl:grid-cols-[minmax(0,1fr)]'
+
+  const exitFocus = () => {
+    setFocusMode(false)
+    setFocusInspector(false)
+  }
 
   // All labOps helpers are pure: they take a lab and return the updated lab.
   // The previous state is pushed onto the undo history before it is replaced,
@@ -148,6 +178,19 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
     return () => window.removeEventListener('keydown', onKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lab?.id, lab])
+
+  // Escape exits focus mode.
+  useEffect(() => {
+    if (!focusMode) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setFocusMode(false)
+        setFocusInspector(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [focusMode])
 
   const exportLab = () => {
     if (!lab) return
@@ -204,48 +247,26 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
   }
 
   return (
-    <div className="grid h-full min-h-0 grid-cols-1 grid-rows-[auto_1fr] xl:grid-cols-[240px_1fr_340px] xl:grid-rows-1">
-      {/* Lab management column */}
-      <aside className="flex min-h-0 flex-col border-b border-edge bg-panel-2 xl:border-b-0 xl:border-r">
-        <div className="flex items-center justify-between gap-2 px-4 py-3">
-          <h2 className="text-sm font-semibold text-slate-200">Labs</h2>
-          <div className="flex gap-1.5">
-            <button
-              type="button"
-              className="btn-chip"
-              onClick={exportLab}
-              title="Export the open lab as a JSON file"
-            >
-              <Download size={13} aria-hidden /> Export
-            </button>
-            <button
-              type="button"
-              className="btn-chip"
-              onClick={() => fileInputRef.current?.click()}
-              title="Import a lab from a JSON file"
-            >
-              <Upload size={13} aria-hidden /> Import
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".json,application/json"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                e.target.value = ''
-                if (file) void handleImportFile(file)
-              }}
+    <div className={`grid h-full min-h-0 grid-cols-1 grid-rows-[auto_1fr] ${gridColsClass} xl:grid-rows-1`}>
+      {/* Lab management column (collapsible; stays mounted so local state survives) */}
+      <aside className={`flex min-h-0 flex-col border-b border-edge bg-panel-2 xl:border-b-0 xl:border-r ${showLabSidebar ? '' : 'hidden'}`}>
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+          <div className="flex items-center gap-1.5">
+            <ToolbarIcon
+              label="Hide lab sidebar"
+              icon={PanelLeftClose}
+              onClick={() => setLabSidebarOpen(false)}
             />
-            <button
-              type="button"
-              className="btn-chip"
-              onClick={() => onLabCreated(labStore.create('New Lab').id)}
-              title="Create a new empty lab"
-            >
-              <FilePlus2 size={13} aria-hidden /> New
-            </button>
+            <h2 className="text-sm font-semibold text-slate-200">Labs</h2>
           </div>
+          <button
+            type="button"
+            className="btn-chip"
+            onClick={() => onLabCreated(labStore.create('New Lab').id)}
+            title="Create a new empty lab"
+          >
+            <FilePlus2 size={13} aria-hidden /> New
+          </button>
         </div>
         {importNotice && (
           <div
@@ -348,7 +369,7 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
             type="button"
             className="btn-ghost w-full text-xs"
             onClick={() => {
-              if (window.confirm('Restore the built-in sample labs? Your own labs are kept — only the four samples are reset to their pristine templates.')) labStore.resetToSamples()
+              if (window.confirm('Restore the built-in sample labs? Your own labs are kept — only the samples are reset to their pristine templates.')) labStore.resetToSamples()
             }}
           >
             Restore sample labs
@@ -358,49 +379,136 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
 
       {/* Canvas column */}
       <main className="relative flex min-h-0 min-w-0 flex-col">
-        <div className="flex flex-wrap items-center gap-1.5 border-b border-edge bg-panel-2 px-3 py-2">
-          <span className="mr-1 flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-slate-500">
-            <Cable size={13} aria-hidden /> Add device
-          </span>
-          {PALETTE.map(({ kind, label, icon: Icon }) => (
+        <div
+          className="flex flex-wrap items-center gap-1.5 border-b border-edge bg-panel-2 px-2 py-1.5"
+          role="toolbar"
+          aria-label="Topology workspace"
+        >
+          {/* Workspace / view controls */}
+          <div className="flex items-center gap-1" role="group" aria-label="Workspace view">
+            {focusMode ? (
+              <button
+                type="button"
+                className="btn-chip border-accent/60 bg-accent/10 text-accent"
+                onClick={exitFocus}
+                title="Exit focus mode (Esc)"
+                aria-label="Exit focus mode"
+              >
+                <Minimize2 size={14} aria-hidden /> <span className="hidden md:inline">Exit focus</span>
+              </button>
+            ) : (
+              <>
+                <ToolbarIcon
+                  label={labSidebarOpen ? 'Hide lab sidebar' : 'Show lab sidebar'}
+                  icon={labSidebarOpen ? PanelLeftClose : PanelLeftOpen}
+                  onClick={() => setLabSidebarOpen((v) => !v)}
+                />
+                <ToolbarIcon
+                  label={inspectorOpen ? 'Hide tools panel' : 'Show tools panel'}
+                  icon={inspectorOpen ? PanelRightClose : PanelRightOpen}
+                  onClick={() => setInspectorOpen((v) => !v)}
+                />
+                <ToolbarIcon
+                  label="Focus mode: maximize the topology canvas"
+                  icon={Maximize2}
+                  onClick={() => setFocusMode(true)}
+                />
+              </>
+            )}
+          </div>
+          <ToolbarDivider />
+          {/* Lab / file actions */}
+          <div className="flex items-center gap-1" role="group" aria-label="Lab file actions">
             <button
-              key={kind}
               type="button"
               className="btn-chip"
-              onClick={() =>
-                change((draft) => {
-                  const x = 120 + Math.round(Math.random() * 320)
-                  const y = 100 + Math.round(Math.random() * 220)
-                  return addDevice(draft, kind, x, y)
-                })
-              }
-              title={`Add a ${label.toLowerCase()}`}
+              onClick={() => onLabCreated(labStore.create('New Lab').id)}
+              title="Create a new empty lab"
+              aria-label="Create a new empty lab"
             >
-              <Icon size={13} aria-hidden /> {label}
+              <FilePlus2 size={14} aria-hidden /> <span className="hidden lg:inline">New</span>
             </button>
-          ))}
-          <span className="mx-1 h-5 w-px bg-edge" aria-hidden />
-          <button
-            type="button"
-            className="btn-chip"
-            onClick={undo}
-            disabled={!historyRef.current.canUndo}
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo2 size={13} aria-hidden /> Undo
-          </button>
-          <button
-            type="button"
-            className="btn-chip"
-            onClick={redo}
-            disabled={!historyRef.current.canRedo}
-            title="Redo (Ctrl+Y)"
-          >
-            <Redo2 size={13} aria-hidden /> Redo
-          </button>
-          <span className="ml-auto hidden text-[11px] text-slate-600 md:block">
-            Drag interface dots together to cable devices · double-click a cable to remove it
-          </span>
+            <button
+              type="button"
+              className="btn-chip"
+              onClick={() => fileInputRef.current?.click()}
+              title="Import a lab from a JSON file"
+              aria-label="Import a lab from a JSON file"
+            >
+              <Upload size={14} aria-hidden /> <span className="hidden lg:inline">Import</span>
+            </button>
+            <button
+              type="button"
+              className="btn-chip"
+              onClick={exportLab}
+              title="Export the open lab as a JSON file"
+              aria-label="Export the open lab as a JSON file"
+            >
+              <Download size={14} aria-hidden /> <span className="hidden lg:inline">Export</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".json,application/json"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                e.target.value = ''
+                if (file) void handleImportFile(file)
+              }}
+            />
+          </div>
+          <ToolbarDivider />
+          {/* Device creation */}
+          <div className="flex items-center gap-1" role="group" aria-label="Add device">
+            {PALETTE.map(({ kind, label, icon: Icon }) => (
+              <button
+                key={kind}
+                type="button"
+                className="btn-chip"
+                onClick={() =>
+                  change((draft) => {
+                    const x = 120 + Math.round(Math.random() * 320)
+                    const y = 100 + Math.round(Math.random() * 220)
+                    return addDevice(draft, kind, x, y)
+                  })
+                }
+                title={`Add a ${label.toLowerCase()}`}
+                aria-label={`Add a ${label.toLowerCase()}`}
+              >
+                <Icon size={14} aria-hidden /> <span className="hidden lg:inline">{label}</span>
+              </button>
+            ))}
+          </div>
+          <ToolbarDivider />
+          {/* History */}
+          <div className="flex items-center gap-1" role="group" aria-label="Undo and redo">
+            <button
+              type="button"
+              className="btn-chip"
+              onClick={undo}
+              disabled={!historyRef.current.canUndo}
+              title="Undo (Ctrl+Z)"
+              aria-label="Undo"
+            >
+              <Undo2 size={14} aria-hidden /> <span className="hidden md:inline">Undo</span>
+            </button>
+            <button
+              type="button"
+              className="btn-chip"
+              onClick={redo}
+              disabled={!historyRef.current.canRedo}
+              title="Redo (Ctrl+Y)"
+              aria-label="Redo"
+            >
+              <Redo2 size={14} aria-hidden /> <span className="hidden md:inline">Redo</span>
+            </button>
+          </div>
+          {!focusMode && (
+            <span className="ml-auto hidden max-w-xs truncate text-[11px] text-slate-600 2xl:block">
+              Drag interface dots together to cable devices · double-click a cable to remove it
+            </span>
+          )}
         </div>
         {connectError && (
           <div className="flex items-center justify-between border-b border-red-900/60 bg-red-950/40 px-3 py-1.5 text-xs text-red-300">
@@ -417,6 +525,7 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
             onDeviceSelected={(id) => {
               setSelectedDeviceId(id)
               setTab('device')
+              if (focusMode) setFocusInspector(true)
             }}
             onDeviceMoved={(id, x, y) => change((draft) => updateDevice(draft, id, { x, y }), `move:${id}`)}
             onConnectInterfaces={handleConnect}
@@ -431,8 +540,12 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
         </div>
       </main>
 
-      {/* Inspector column */}
-      <aside className="flex min-h-0 flex-col border-t border-edge bg-panel xl:border-l xl:border-t-0">
+      {/* Inspector column (collapsible; stays mounted so tool state survives) */}
+      <aside
+        className={`flex min-h-0 flex-col border-t border-edge bg-panel xl:border-l xl:border-t-0 ${
+          showInspector ? '' : 'hidden'
+        }`}
+      >
         <div className="flex border-b border-edge bg-panel-2">
           {(
             [
@@ -544,8 +657,64 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
           </div>
         </div>
       </aside>
+
+      {/* Focus mode: tools panel as an overlay above the canvas */}
+      {focusMode && focusInspector && (
+        <div className="absolute inset-y-0 right-0 z-20 flex w-[340px] max-w-[90%] flex-col border-l border-edge bg-panel shadow-2xl">
+          <div className="flex items-center justify-between border-b border-edge px-3 py-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Simulation tools</span>
+            <button
+              type="button"
+              className="btn-chip px-2"
+              onClick={() => setFocusInspector(false)}
+              aria-label="Close tools panel"
+              title="Close tools panel"
+            >
+              <X size={13} aria-hidden />
+            </button>
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex border-b border-edge bg-panel-2">
+              {(
+                [
+                  ['device', 'Device'],
+                  ['check', `Check${summary.errors > 0 ? ` (${summary.errors})` : ''}`],
+                  ['faults', `Faults${lab.faults.length ? ` (${lab.faults.length})` : ''}`],
+                  ['ping', 'Ping'],
+                ] as Array<[Tab, string]>
+              ).map(([key, label]) => (
+                <button key={key} type="button" className={`tab ${tab === key ? 'tab-active' : ''}`} onClick={() => setTab(key)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto">
+              <PingConsole lab={lab} onHighlight={setHighlighted} initialSourceId={selectedDeviceId ?? undefined} />
+              {selectedDevice && (
+                <p className="px-4 pb-3 pt-2 text-[11px] text-slate-500">
+                  Selected: <span className="font-semibold text-slate-300">{selectedDevice.name}</span> — full editing tools are
+                  available after exiting focus mode.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+/** Compact icon-only toolbar button with accessible label and tooltip. */
+function ToolbarIcon({ label, icon: Icon, onClick }: { label: string; icon: typeof Cable; onClick: () => void }) {
+  return (
+    <button type="button" className="btn-chip px-2" onClick={onClick} title={label} aria-label={label}>
+      <Icon size={14} aria-hidden />
+    </button>
+  )
+}
+
+function ToolbarDivider() {
+  return <span className="mx-0.5 h-5 w-px shrink-0 self-center bg-edge" aria-hidden />
 }
 
 function ValidationRow({ issue, onSelect }: { issue: ValidationIssue; onSelect: () => void }) {
