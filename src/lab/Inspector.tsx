@@ -274,50 +274,56 @@ export function Inspector(props: InspectorProps) {
                       )}
                       <div className="space-y-1.5">
                         {(iface.subInterfaces ?? []).map((sub) => (
-                          <div key={sub.id} className="flex items-center gap-1.5">
+                          <div key={sub.id} className="flex flex-wrap items-center gap-1.5 rounded-md border border-edge/70 bg-night-950/40 px-1.5 py-1">
                             <input
-                              className="input w-24 font-mono text-xs"
+                              className="input w-20 min-w-0 shrink-0 font-mono text-xs"
                               value={sub.name}
                               onChange={(e) => props.onChangeSubInterface(iface.id, sub.id, { name: e.target.value })}
                               aria-label="Sub-interface name"
                             />
                             <input
-                              className="input w-14 font-mono text-xs"
+                              className="input w-14 shrink-0 font-mono text-xs"
                               type="number"
                               min={1}
                               max={4094}
                               value={sub.vlanId}
                               title="VLAN id"
+                              aria-label="VLAN id"
                               onChange={(e) => props.onChangeSubInterface(iface.id, sub.id, { vlanId: Number(e.target.value) || 1 })}
                             />
                             <input
-                              className="input flex-1 font-mono text-xs"
+                              className="input min-w-0 flex-[1_1_8rem] font-mono text-xs"
                               placeholder="192.168.10.1/24"
                               value={sub.cidr ?? ''}
                               onChange={(e) => props.onChangeSubInterface(iface.id, sub.id, { cidr: e.target.value === '' ? null : e.target.value })}
                             />
                             <input
-                              className="input w-28 font-mono text-xs"
+                              className="input min-w-0 flex-[1_1_7rem] font-mono text-xs"
                               placeholder="relay → IP"
                               title="DHCP relay (ip helper-address)"
+                              aria-label="DHCP relay target"
                               value={sub.dhcpRelay ?? ''}
                               onChange={(e) => props.onChangeSubInterface(iface.id, sub.id, { dhcpRelay: e.target.value === '' ? null : e.target.value })}
                             />
-                            <button
-                              type="button"
-                              className={`badge cursor-pointer border ${sub.enabled ? 'border-emerald-800 bg-emerald-950/40 text-emerald-300' : 'border-red-800 bg-red-950/40 text-red-300'}`}
-                              onClick={() => props.onChangeSubInterface(iface.id, sub.id, { enabled: !sub.enabled })}
-                            >
-                              {sub.enabled ? 'up' : 'down'}
-                            </button>
-                            <button
-                              type="button"
-                              className="rounded p-0.5 text-slate-600 hover:text-red-400"
-                              onClick={() => props.onDeleteSubInterface(iface.id, sub.id)}
-                              title="Delete sub-interface"
-                            >
-                              <Trash2 size={11} aria-hidden />
-                            </button>
+                            <span className="ml-auto flex shrink-0 items-center gap-1">
+                              <button
+                                type="button"
+                                className={`badge cursor-pointer border ${sub.enabled ? 'border-emerald-800 bg-emerald-950/40 text-emerald-300' : 'border-red-800 bg-red-950/40 text-red-300'}`}
+                                onClick={() => props.onChangeSubInterface(iface.id, sub.id, { enabled: !sub.enabled })}
+                                title={sub.enabled ? 'Click to shut down' : 'Click to enable'}
+                              >
+                                {sub.enabled ? 'up' : 'down'}
+                              </button>
+                              <button
+                                type="button"
+                                className="rounded p-0.5 text-slate-600 hover:text-red-400"
+                                onClick={() => props.onDeleteSubInterface(iface.id, sub.id)}
+                                title="Delete sub-interface"
+                                aria-label="Delete sub-interface"
+                              >
+                                <Trash2 size={11} aria-hidden />
+                              </button>
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -365,9 +371,9 @@ export function Inspector(props: InspectorProps) {
               ))}
               {liveDevice.staticRoutes.length === 0 && <li className="text-xs text-slate-600">No static routes configured.</li>}
             </ul>
-            <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
-              <input className="input font-mono text-xs" placeholder="172.16.20.0/24" value={routeDest} onChange={(e) => setRouteDest(e.target.value)} />
-              <input className="input font-mono text-xs" placeholder="next hop" value={routeNextHop} onChange={(e) => setRouteNextHop(e.target.value)} />
+            <div className="flex flex-wrap items-center gap-2">
+              <input className="input min-w-0 flex-[1_1_8rem] font-mono text-xs" placeholder="172.16.20.0/24" value={routeDest} onChange={(e) => setRouteDest(e.target.value)} />
+              <input className="input min-w-0 flex-[1_1_7rem] font-mono text-xs" placeholder="next hop" value={routeNextHop} onChange={(e) => setRouteNextHop(e.target.value)} />
               <button
                 type="button"
                 className="btn-ghost"

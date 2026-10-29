@@ -6,8 +6,6 @@ import {
   Download,
   FilePlus2,
   Info,
-  Maximize2,
-  Minimize2,
   Monitor,
   Network,
   PanelLeftClose,
@@ -23,7 +21,6 @@ import {
   TriangleAlert,
   Undo2,
   Upload,
-  X,
 } from 'lucide-react'
 import type { DeviceKind, FaultKind, Lab } from '../engine/types'
 import { summarizeValidation, validateLab } from '../engine/validate'
@@ -83,8 +80,6 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
   // Workspace layout (UI only — lab data always lives in the store).
   const [labSidebarOpen, setLabSidebarOpen] = useState(true)
   const [inspectorOpen, setInspectorOpen] = useState(true)
-  const [focusMode, setFocusMode] = useState(false)
-  const [focusInspector, setFocusInspector] = useState(false)
   const historyRef = useRef(new LabHistory())
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [, forceRender] = useState(0)
@@ -120,10 +115,9 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
 
   const selectedDevice = lab?.devices.find((d) => d.id === selectedDeviceId) ?? null
 
-  // Focus mode hides both side panels; normal mode honors the two toggles.
   // Panels stay MOUNTED (hidden with CSS) so tool state and selection survive.
-  const showLabSidebar = labSidebarOpen && !focusMode
-  const showInspector = inspectorOpen && !focusMode
+  const showLabSidebar = labSidebarOpen
+  const showInspector = inspectorOpen
   const gridColsClass =
     showLabSidebar && showInspector
       ? 'xl:grid-cols-[240px_minmax(0,1fr)_340px]'
@@ -132,11 +126,6 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
         : showInspector
           ? 'xl:grid-cols-[minmax(0,1fr)_340px]'
           : 'xl:grid-cols-[minmax(0,1fr)]'
-
-  const exitFocus = () => {
-    setFocusMode(false)
-    setFocusInspector(false)
-  }
 
   // All labOps helpers are pure: they take a lab and return the updated lab.
   // The previous state is pushed onto the undo history before it is replaced,
@@ -178,19 +167,6 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
     return () => window.removeEventListener('keydown', onKeyDown)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lab?.id, lab])
-
-  // Escape exits focus mode.
-  useEffect(() => {
-    if (!focusMode) return
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setFocusMode(false)
-        setFocusInspector(false)
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [focusMode])
 
   const exportLab = () => {
     if (!lab) return
@@ -386,35 +362,16 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
         >
           {/* Workspace / view controls */}
           <div className="flex items-center gap-1" role="group" aria-label="Workspace view">
-            {focusMode ? (
-              <button
-                type="button"
-                className="btn-chip border-accent/60 bg-accent/10 text-accent"
-                onClick={exitFocus}
-                title="Exit focus mode (Esc)"
-                aria-label="Exit focus mode"
-              >
-                <Minimize2 size={14} aria-hidden /> <span className="hidden md:inline">Exit focus</span>
-              </button>
-            ) : (
-              <>
-                <ToolbarIcon
-                  label={labSidebarOpen ? 'Hide lab sidebar' : 'Show lab sidebar'}
-                  icon={labSidebarOpen ? PanelLeftClose : PanelLeftOpen}
-                  onClick={() => setLabSidebarOpen((v) => !v)}
-                />
-                <ToolbarIcon
-                  label={inspectorOpen ? 'Hide tools panel' : 'Show tools panel'}
-                  icon={inspectorOpen ? PanelRightClose : PanelRightOpen}
-                  onClick={() => setInspectorOpen((v) => !v)}
-                />
-                <ToolbarIcon
-                  label="Focus mode: maximize the topology canvas"
-                  icon={Maximize2}
-                  onClick={() => setFocusMode(true)}
-                />
-              </>
-            )}
+            <ToolbarIcon
+              label={labSidebarOpen ? 'Hide lab sidebar' : 'Show lab sidebar'}
+              icon={labSidebarOpen ? PanelLeftClose : PanelLeftOpen}
+              onClick={() => setLabSidebarOpen((v) => !v)}
+            />
+            <ToolbarIcon
+              label={inspectorOpen ? 'Hide tools panel' : 'Show tools panel'}
+              icon={inspectorOpen ? PanelRightClose : PanelRightOpen}
+              onClick={() => setInspectorOpen((v) => !v)}
+            />
           </div>
           <ToolbarDivider />
           {/* Lab / file actions */}
@@ -504,11 +461,9 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
               <Redo2 size={14} aria-hidden /> <span className="hidden md:inline">Redo</span>
             </button>
           </div>
-          {!focusMode && (
-            <span className="ml-auto hidden max-w-xs truncate text-[11px] text-slate-600 2xl:block">
-              Drag interface dots together to cable devices · double-click a cable to remove it
-            </span>
-          )}
+          <span className="ml-auto hidden max-w-xs truncate text-[11px] text-slate-600 2xl:block">
+            Drag interface dots together to cable devices · double-click a cable to remove it
+          </span>
         </div>
         {connectError && (
           <div className="flex items-center justify-between border-b border-red-900/60 bg-red-950/40 px-3 py-1.5 text-xs text-red-300">
@@ -525,7 +480,6 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
             onDeviceSelected={(id) => {
               setSelectedDeviceId(id)
               setTab('device')
-              if (focusMode) setFocusInspector(true)
             }}
             onDeviceMoved={(id, x, y) => change((draft) => updateDevice(draft, id, { x, y }), `move:${id}`)}
             onConnectInterfaces={handleConnect}
@@ -658,48 +612,6 @@ export function NetLabView({ labId, onLabCreated }: { labId: string | null; onLa
         </div>
       </aside>
 
-      {/* Focus mode: tools panel as an overlay above the canvas */}
-      {focusMode && focusInspector && (
-        <div className="absolute inset-y-0 right-0 z-20 flex w-[340px] max-w-[90%] flex-col border-l border-edge bg-panel shadow-2xl">
-          <div className="flex items-center justify-between border-b border-edge px-3 py-1.5">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Simulation tools</span>
-            <button
-              type="button"
-              className="btn-chip px-2"
-              onClick={() => setFocusInspector(false)}
-              aria-label="Close tools panel"
-              title="Close tools panel"
-            >
-              <X size={13} aria-hidden />
-            </button>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex border-b border-edge bg-panel-2">
-              {(
-                [
-                  ['device', 'Device'],
-                  ['check', `Check${summary.errors > 0 ? ` (${summary.errors})` : ''}`],
-                  ['faults', `Faults${lab.faults.length ? ` (${lab.faults.length})` : ''}`],
-                  ['ping', 'Ping'],
-                ] as Array<[Tab, string]>
-              ).map(([key, label]) => (
-                <button key={key} type="button" className={`tab ${tab === key ? 'tab-active' : ''}`} onClick={() => setTab(key)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto">
-              <PingConsole lab={lab} onHighlight={setHighlighted} initialSourceId={selectedDeviceId ?? undefined} />
-              {selectedDevice && (
-                <p className="px-4 pb-3 pt-2 text-[11px] text-slate-500">
-                  Selected: <span className="font-semibold text-slate-300">{selectedDevice.name}</span> — full editing tools are
-                  available after exiting focus mode.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

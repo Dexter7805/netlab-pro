@@ -43,49 +43,53 @@ body {
   border-radius: 4px;
 }
 
-/* Form controls share a compact dark look */
-.input {
-  @apply w-full rounded-md border border-edge bg-night-950/80 px-2.5 py-1.5 text-sm text-slate-200 outline-none transition
-    focus:border-accent/70 focus:ring-1 focus:ring-accent/40 disabled:opacity-50;
-}
-select.input {
-  @apply appearance-none pr-7;
-  background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
-    linear-gradient(135deg, #64748b 50%, transparent 50%);
-  background-position: calc(100% - 14px) 55%, calc(100% - 9px) 55%;
-  background-size: 5px 5px;
-  background-repeat: no-repeat;
-}
-.label {
-  @apply mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400;
-}
+/* Form controls share a compact dark look.
+   These live in @layer components so Tailwind utilities (which come later in
+   the cascade) can override them — e.g. w-16 on an .input must beat w-full. */
 @utility btn {
   @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition
     focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-40;
 }
-.btn-primary {
-  @apply btn bg-accent text-night-950 hover:bg-cyan-300;
-}
-.btn-ghost {
-  @apply btn border border-edge bg-panel-2 text-slate-300 hover:border-accent/50 hover:text-white;
-}
-.btn-danger {
-  @apply btn border border-red-900/70 bg-red-950/40 text-red-300 hover:bg-red-900/40;
-}
-.btn-chip {
-  @apply btn border border-edge bg-panel-2 px-2.5 py-1 text-xs text-slate-300 hover:border-accent/60 hover:text-white;
-}
-.card {
-  @apply rounded-xl border border-edge bg-panel shadow-lg shadow-black/20;
-}
-.badge {
-  @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold;
-}
-.tab {
-  @apply border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-400 transition hover:text-slate-200;
-}
-.tab-active {
-  @apply border-accent text-accent;
+@layer components {
+  .input {
+    @apply w-full rounded-md border border-edge bg-night-950/80 px-2.5 py-1.5 text-sm text-slate-200 outline-none transition
+      focus:border-accent/70 focus:ring-1 focus:ring-accent/40 disabled:opacity-50;
+  }
+  select.input {
+    @apply appearance-none pr-7;
+    background-image: linear-gradient(45deg, transparent 50%, #64748b 50%),
+      linear-gradient(135deg, #64748b 50%, transparent 50%);
+    background-position: calc(100% - 14px) 55%, calc(100% - 9px) 55%;
+    background-size: 5px 5px;
+    background-repeat: no-repeat;
+  }
+  .label {
+    @apply mb-1 block text-[11px] font-semibold uppercase tracking-wider text-slate-400;
+  }
+  .btn-primary {
+    @apply btn bg-accent text-night-950 hover:bg-cyan-300;
+  }
+  .btn-ghost {
+    @apply btn border border-edge bg-panel-2 text-slate-300 hover:border-accent/50 hover:text-white;
+  }
+  .btn-danger {
+    @apply btn border border-red-900/70 bg-red-950/40 text-red-300 hover:bg-red-900/40;
+  }
+  .btn-chip {
+    @apply btn border border-edge bg-panel-2 px-2.5 py-1 text-xs text-slate-300 hover:border-accent/60 hover:text-white;
+  }
+  .card {
+    @apply rounded-xl border border-edge bg-panel shadow-lg shadow-black/20;
+  }
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold;
+  }
+  .tab {
+    @apply border-b-2 border-transparent px-3 py-2 text-sm font-medium text-slate-400 transition hover:text-slate-200;
+  }
+  .tab-active {
+    @apply border-accent text-accent;
+  }
 }
 
 /* React Flow theming */

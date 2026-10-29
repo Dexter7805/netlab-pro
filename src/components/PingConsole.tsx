@@ -77,10 +77,12 @@ export function PingConsole({ lab, onHighlight, initialSourceId }: PingConsolePr
         <h3 className="text-sm font-semibold text-slate-200">Ping tool</h3>
         <SimBadge />
       </div>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_1fr_auto_auto_auto]">
-        <div>
+      {/* Responsive rows: source/target fill the width; protocol, port and the
+          button share a wrapping row so nothing clips in narrow panels. */}
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="min-w-0">
           <label className="label" htmlFor="ping-source">Source device</label>
-          <select id="ping-source" className="input" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
+          <select id="ping-source" className="input min-w-0" value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
             {candidates.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name} ({d.kind})
@@ -88,48 +90,55 @@ export function PingConsole({ lab, onHighlight, initialSourceId }: PingConsolePr
             ))}
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="ping-target">Target IP</label>
           <input
             id="ping-target"
-            className="input font-mono"
+            className="input min-w-0 font-mono"
             placeholder="e.g. 10.0.0.20"
             value={target}
             onChange={(e) => setTarget(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && execute()}
           />
         </div>
-        <div>
-          <label className="label" htmlFor="ping-protocol">Protocol</label>
-          <select
-            id="ping-protocol"
-            className="input"
-            value={protocol}
-            onChange={(e) => setProtocol(e.target.value as 'icmp' | 'tcp' | 'udp')}
-            title="ICMP = classic ping; TCP/UDP simulate connection tests"
-          >
-            <option value="icmp">icmp</option>
-            <option value="tcp">tcp</option>
-            <option value="udp">udp</option>
-          </select>
-        </div>
-        <div>
-          <label className="label" htmlFor="ping-port">Port</label>
-          <input
-            id="ping-port"
-            className="input font-mono w-20"
-            type="number"
-            min={1}
-            max={65535}
-            value={destPort}
-            disabled={protocol === 'icmp'}
-            onChange={(e) => setDestPort(e.target.value)}
-          />
-        </div>
-        <div className="flex items-end">
-          <button type="button" className="btn-primary w-full sm:w-auto" onClick={execute} disabled={running || !sourceId || !target.trim()}>
-            <Play size={14} aria-hidden /> {running ? 'Running…' : 'Ping'}
-          </button>
+        <div className="flex flex-wrap items-end gap-2 sm:col-span-2">
+          <div className="min-w-0 flex-1 basis-28">
+            <label className="label" htmlFor="ping-protocol">Protocol</label>
+            <select
+              id="ping-protocol"
+              className="input min-w-0"
+              value={protocol}
+              onChange={(e) => setProtocol(e.target.value as 'icmp' | 'tcp' | 'udp')}
+              title="ICMP = classic ping; TCP/UDP simulate connection tests"
+            >
+              <option value="icmp">icmp</option>
+              <option value="tcp">tcp</option>
+              <option value="udp">udp</option>
+            </select>
+          </div>
+          <div className="w-20 shrink-0">
+            <label className="label" htmlFor="ping-port">Port</label>
+            <input
+              id="ping-port"
+              className="input font-mono"
+              type="number"
+              min={1}
+              max={65535}
+              value={destPort}
+              disabled={protocol === 'icmp'}
+              onChange={(e) => setDestPort(e.target.value)}
+            />
+          </div>
+          <div className="grow sm:grow-0">
+            <button
+              type="button"
+              className="btn-primary w-full sm:min-w-28"
+              onClick={execute}
+              disabled={running || !sourceId || !target.trim()}
+            >
+              <Play size={14} aria-hidden /> {running ? 'Running…' : 'Ping'}
+            </button>
+          </div>
         </div>
       </div>
 

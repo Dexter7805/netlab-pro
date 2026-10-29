@@ -94,7 +94,7 @@ export function AclEditor({ acls, onChange, compact = false }: AclEditorProps) {
               {entry ? (
                 <>
                   <input
-                    className="input h-6 flex-1 py-0 font-mono text-xs"
+                    className="input h-6 min-w-0 flex-1 truncate py-0 font-mono text-xs"
                     value={entry.name}
                     onChange={(e) => updateEntry(entry.id, { name: e.target.value })}
                     aria-label="ACL name"
@@ -114,12 +114,16 @@ export function AclEditor({ acls, onChange, compact = false }: AclEditorProps) {
               <>
                 <div className="space-y-1">
                   {entry.rules.map((rule, index) => (
-                    <div key={rule.id} className="flex items-center gap-1">
-                      <span className="w-4 text-center font-mono text-[10px] text-slate-600" title="Rule number (first match wins)">
+                    <div
+                      key={rule.id}
+                      className="flex flex-wrap items-center gap-1 rounded-md border border-edge/70 bg-night-950/40 px-1.5 py-1"
+                      title={'Rule ' + (index + 1) + ' — evaluated in order, first match wins'}
+                    >
+                      <span className="w-4 shrink-0 text-center font-mono text-[10px] text-slate-600" title="Rule number (first match wins)">
                         {index + 1}
                       </span>
                       <select
-                        className="input h-6 w-[4.5rem] py-0 font-mono text-xs"
+                        className="input h-6 w-[4.5rem] shrink-0 py-0 font-mono text-xs"
                         value={rule.action}
                         onChange={(e) => updateRule(entry.id, rule.id, { action: e.target.value as AclAction })}
                         aria-label="Action"
@@ -128,7 +132,7 @@ export function AclEditor({ acls, onChange, compact = false }: AclEditorProps) {
                         <option value="deny">deny</option>
                       </select>
                       <select
-                        className="input h-6 w-[4.5rem] py-0 font-mono text-xs"
+                        className="input h-6 w-[4.5rem] shrink-0 py-0 font-mono text-xs"
                         value={rule.protocol}
                         onChange={(e) => updateRule(entry.id, rule.id, { protocol: e.target.value as AclProtocol })}
                         aria-label="Protocol"
@@ -138,21 +142,21 @@ export function AclEditor({ acls, onChange, compact = false }: AclEditorProps) {
                         <option value="udp">udp</option>
                       </select>
                       <input
-                        className="input h-6 min-w-0 flex-1 py-0 font-mono text-xs"
+                        className="input h-6 min-w-0 flex-[1_1_7rem] py-0 font-mono text-xs"
                         placeholder="src (any/ip/cidr)"
                         value={rule.source}
                         onChange={(e) => updateRule(entry.id, rule.id, { source: e.target.value })}
                         aria-label="Source"
                       />
                       <input
-                        className="input h-6 min-w-0 flex-1 py-0 font-mono text-xs"
+                        className="input h-6 min-w-0 flex-[1_1_7rem] py-0 font-mono text-xs"
                         placeholder="dst (any/ip/cidr)"
                         value={rule.destination}
                         onChange={(e) => updateRule(entry.id, rule.id, { destination: e.target.value })}
                         aria-label="Destination"
                       />
                       <input
-                        className="input h-6 w-14 py-0 font-mono text-xs"
+                        className="input h-6 w-16 shrink-0 py-0 font-mono text-xs"
                         placeholder="port"
                         type="number"
                         min={1}
@@ -162,15 +166,17 @@ export function AclEditor({ acls, onChange, compact = false }: AclEditorProps) {
                         onChange={(e) => updateRule(entry.id, rule.id, { destPort: e.target.value === '' ? null : Number(e.target.value) })}
                         aria-label="Destination port"
                       />
-                      <button type="button" className="rounded p-0.5 text-slate-600 hover:text-accent disabled:opacity-25" disabled={index === 0} onClick={() => moveRule(entry.id, rule.id, -1)} title="Move rule up (evaluated earlier)">
-                        <ArrowUp size={11} aria-hidden />
-                      </button>
-                      <button type="button" className="rounded p-0.5 text-slate-600 hover:text-accent disabled:opacity-25" disabled={index === entry.rules.length - 1} onClick={() => moveRule(entry.id, rule.id, 1)} title="Move rule down (evaluated later)">
-                        <ArrowDown size={11} aria-hidden />
-                      </button>
-                      <button type="button" className="rounded p-0.5 text-slate-600 hover:text-red-400" onClick={() => deleteRule(entry.id, rule.id)} title="Delete rule">
-                        <Trash2 size={11} aria-hidden />
-                      </button>
+                      <span className="ml-auto flex shrink-0 items-center gap-0.5">
+                        <button type="button" className="rounded p-0.5 text-slate-600 hover:text-accent disabled:opacity-25" disabled={index === 0} onClick={() => moveRule(entry.id, rule.id, -1)} title="Move rule up (evaluated earlier)" aria-label="Move rule up">
+                          <ArrowUp size={11} aria-hidden />
+                        </button>
+                        <button type="button" className="rounded p-0.5 text-slate-600 hover:text-accent disabled:opacity-25" disabled={index === entry.rules.length - 1} onClick={() => moveRule(entry.id, rule.id, 1)} title="Move rule down (evaluated later)" aria-label="Move rule down">
+                          <ArrowDown size={11} aria-hidden />
+                        </button>
+                        <button type="button" className="rounded p-0.5 text-slate-600 hover:text-red-400" onClick={() => deleteRule(entry.id, rule.id)} title="Delete rule" aria-label="Delete rule">
+                          <Trash2 size={11} aria-hidden />
+                        </button>
+                      </span>
                     </div>
                   ))}
                   {entry.rules.length === 0 && (
