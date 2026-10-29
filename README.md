@@ -160,6 +160,41 @@ Suggested order for the remaining items: 3 -> 5 -> 6 (IPv6 last because it touch
 - DHCP is deterministic and instantaneous; there is no lease renewal/expiry timeline.
 - No import/export of lab files (labs live in localStorage only) and no undo/redo history.
 
+## Backup, Git & GitHub
+
+The project is a local Git repository. The working state is committed and tagged `working-v1`.
+
+Push it to GitHub (one-time setup):
+
+```powershell
+# Option A — with the GitHub CLI (after `gh auth login`):
+gh repo create netlab-pro --private --source . --push
+
+# Option B — manually: create an empty repo on github.com, then:
+git remote add origin https://github.com/<your-username>/netlab-pro.git
+git push -u origin main --tags
+```
+
+Everyday workflow — **commit before every change session**, so you always have a point to return to:
+
+```powershell
+git add -A
+git commit -m "describe what you changed"
+git push            # after the remote is set up
+```
+
+Restore options (from newest to most drastic):
+
+```powershell
+git restore .                 # discard all UNCOMMITTED changes, keep history
+git log --oneline             # list saved versions (commits)
+git checkout <commit-hash> -- src   # restore only the src/ folder from an old commit
+git reset --hard <commit-hash>      # move the WHOLE project back to an old commit
+git reset --hard working-v1         # ...using the tagged known-good version
+```
+
+Warning: `git reset --hard` discards uncommitted changes permanently — commit (or stash) first. Note that Git backs up **code only**: labs you saved in the browser live in localStorage, so export important labs to `.netlab.json` files (NetLab → Export) as an extra backup.
+
 ## Tech stack
 
 React 19 · TypeScript · Vite · @xyflow/react (topology canvas) · Tailwind CSS v4 · lucide-react (icons) · Vitest (tests) · localStorage (persistence)
